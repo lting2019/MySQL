@@ -1,0 +1,515 @@
+-- 使用test数据库
+
+USE test;
+
+-- -------------------------
+-- table structure for student
+-- --------------------------
+DROP TABLE IF EXISTS student;
+CREATE TABLE student
+    (
+        NAME NVARCHAR(32) DEFAULT NULL,
+        age INT(11) DEFAULT NULL,
+        sex NVARCHAR(8)  DEFAULT NULL,
+        studentNo INT(11) DEFAULT NULL
+     )  ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+-- ---------------------------
+-- Records of student
+-- ---------------------------
+INSERT INTO student VALUES('钱二',19,'女',2);
+INSERT INTO student VALUES('刘一',18,'男',1);
+INSERT INTO student VALUES('张三',17,'男',3);
+INSERT INTO student VALUES('李四',18,'女',4);
+INSERT INTO student VALUES('王五',17,'男',5);
+INSERT INTO student VALUES('赵六',19,'女',6);  
+INSERT INTO student VALUES('钱二',25,'男',7);  
+
+-- ----------------------------
+-- teble structure for course
+-- -----------------------------
+DROP TABLE IF EXISTS course;
+CREATE TABLE course
+    (
+        courseNo INT(11) DEFAULT NULL,
+        NAME VARCHAR(20) DEFAULT NULL,
+        teacherNo INT(11) DEFAULT NULL
+     )  ENGINE=INNODB DEFAULT CHARSET=utf8;
+  
+-- ----------------------------
+-- records of course
+-- ----------------------------
+INSERT INTO course VALUES(1,'语文',1);
+INSERT INTO course VALUES(2,'数学',2);
+INSERT INTO course VALUES(3,'英语',3);
+INSERT INTO course VALUES(2,'物理',4);
+
+-- -----------------------------
+-- table structure for score 
+-- -------------------------------
+DROP TABLE IF EXISTS score;
+CREATE TABLE score
+    (
+        studentNo INT(11) DEFAULT NULL,
+        courseNo INT(11) DEFAULT NULL,
+        score INT(11) DEFAULT NULL
+     ) ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+-- ------------------------------------
+-- recirds of score
+-- -------------------------------------
+INSERT INTO score VALUES(1,2,78);
+INSERT INTO score VALUES(1,3,67);
+INSERT INTO score VALUES(1,4,67);
+INSERT INTO score VALUES(2,1,52);
+INSERT INTO score VALUES(2,2,81);
+INSERT INTO score VALUES(2,3,92);
+INSERT INTO score VALUES(2,4,67);
+INSERT INTO score VALUES(3,1,52);
+INSERT INTO score VALUES(3,2,47);
+INSERT INTO score VALUES(3,3,88);
+INSERT INTO score VALUES(4,3,90);
+INSERT INTO score VALUES(4,4,67);
+INSERT INTO score VALUES(5,1,52);
+INSERT INTO score VALUES(5,3,78);
+INSERT INTO score VALUES(5,4,67);
+INSERT INTO score VALUES(6,1,52);
+INSERT INTO score VALUES(6,2,68);
+INSERT INTO score VALUES(6,4,67);
+INSERT INTO score VALUES(1,1,52);   
+INSERT INTO score VALUES(5,2,72);
+INSERT INTO score VALUES(7,2,72); 
+
+-- ------------------------------
+-- table structure for teacher  
+-- -------------------------------
+DROP TABLE IF EXISTS teacher;
+CREATE TABLE teacher
+    (
+        teacherNo INT(11) DEFAULT NULL,
+        NAME VARCHAR(20) DEFAULT NULL
+     )ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+-- -------------------------------------
+-- records of teacher
+-- ------------------------------------
+INSERT INTO teacher VALUES(1,'叶平');
+INSERT INTO teacher VALUES(2,'贺高');
+INSERT INTO teacher VALUES(3,'杨艳');
+INSERT INTO teacher VALUES(4,'叶平');
+
+-- 查询表结构
+SHOW TABLES;
+DESC course;
+DESC teacher;
+DESC score;
+DESC student;
+
+-- ----------------------------------
+-- (1)查询 1 课程比 2 课程成绩低的所有学生的学号、1 学科成绩、 2 学科成绩
+-- ---------------------------------------
+SELECT a.studentNo,
+       a.score AS '001',
+       b.score AS '002'
+FROM   score a,
+       (SELECT studentNO,score FROM score WHERE courseNo=2) b
+WHERE   a.`courseNo`=1 AND a.`studentNo`=b.studentNo AND a.`score`< b.score
+GROUP BY a.`studentNo`;
+
+SELECT a.studentNo,
+       a.score AS '001',
+       b.score AS '002'
+FROM   score a,
+       score b
+WHERE  a.`courseNo`=1 AND b.`courseNo`=2 AND a.`score`<b.`score` AND a.`studentNo`=b.`studentNo`
+GROUP BY a.`studentNo`;
+
+-- --------------------------
+-- (2)查询平均成绩大于60分的童鞋的学号和平均成绩
+-- --------------------------
+SELECT studentNo,
+       AVG(score)
+FROM   score
+GROUP BY studentNo
+HAVING  AVG(score)>60;
+
+-- --------------------------
+-- (3)查询所有童鞋的学号、姓名、选课数、总成绩
+-- ----------------------------
+SELECT a.studentNo,
+       a.name,
+       COUNT(*),
+       SUM(c.score)
+FROM   student a,
+       score   c
+WHERE  a.`studentNo`=c.`studentNo` 
+GROUP BY a.`studentNo`;
+
+-- ----------------------------
+-- (4)查询姓杨的老师的个数
+-- -------------------------------
+SELECT COUNT(*)
+FROM  teacher
+WHERE NAME LIKE '杨%';
+
+-- ---------------------------
+-- (5)查询没有学过’叶平‘老师课的同学的学号和姓名
+-- -----------------------------
+SELECT a.studentNo,
+       a.name
+FROM   student a
+WHERE a.`studentNo`NOT IN(
+SELECT d.`studentNo` FROM course b, teacher c ,score d
+WHERE  d.`courseNo`=b.`courseNo` AND b.`teacherNo`=c.`teacherNo`
+AND c.`name`='叶平')
+
+-- --------------------------
+-- (6)查询学过 1 并且也学过编号 2 课程的同学的学号和姓名
+-- --------------------------
+SELECT a.`studentNo` ,
+       a.`name`
+FROM   student a
+WHERE a.`studentNo` IN(
+SELECT b.studentNo FROM score b,score c 
+WHERE b.`courseNo`=1 AND c.`courseNo`=2 AND b.`studentNo`=c.`studentNo`);
+
+-- -------------------------------
+-- (7)查询学过 叶平 老师所教的所有课的同学的学号、姓名
+-- --------------------------------
+SELECT a.studentNo,a.name
+FROM student a
+WHERE a.`studentNo` IN (
+SELECT b.studentNo FROM score b ,course c ,teacher d
+WHERE b.`courseNo`=c.`courseNo` AND c.`teacherNo`=d.`teacherNo` AND d.`name`='叶平'
+GROUP BY b.`studentNo`
+HAVING COUNT(*)= 
+(SELECT COUNT(*)
+FROM course c ,teacher d
+WHERE c.`teacherNo`=d.`teacherNo` AND d.`name`='叶平'))
+
+-- ----------------------------------
+-- (8)查询课程编号 2 的成绩比课程编号 1 课程低的所有童鞋的学号和姓名
+-- -----------------------------------
+SELECT a.`studentNo`,a.`name`
+FROM student a
+WHERE a.`studentNo` IN(
+SELECT b.studentNo FROM score b,score c
+WHERE b.`courseNo`=1 AND c.`courseNo`=2 AND b.`studentNo`=c.`studentNo`
+AND b.`score`>c.`score`);
+
+-- ------------------------------------
+-- (9)查询有课程成绩小于60分的同学的学号、姓名
+-- ------------------------------------
+SELECT a.studentNo,a.name
+FROM student a
+WHERE a.`studentNo` IN (
+SELECT b.studentNo FROM score b
+WHERE b.`score`<60);
+
+-- ----------------------------
+-- (10)查询没有学全所有课程的同学的学号、姓名
+-- -----------------------------
+SELECT a.studentNo,a.name
+FROM student a
+WHERE a.`studentNo` IN (
+SELECT b.studentNo FROM score b
+GROUP BY b.`studentNo` HAVING COUNT(*)<(
+SELECT COUNT(*) FROM course ));
+
+-- --------------------------
+-- (11)查询至少有一门课与学号为 1 的同学所学相同的同学的学号和姓名
+-- ----------------------------
+ SELECT DISTINCT a.studentNo,a.name
+ FROM student a , score b
+ WHERE a.`studentNo`=b.`studentNo`
+ AND b.`courseNo` IN (
+ SELECT b.courseNo FROM score b WHERE b.`studentNo`=1);
+ 
+ -- ------------------------------
+ -- (12)查询至少学过学号为 1 同学所有一门课的其他同学的学号和姓名
+ -- -------------------------------
+ SELECT a.studentNo,a.name
+ FROM student a,score b
+ WHERE a.`studentNo` =b.`studentNo`
+ AND a.`studentNo`!<>1
+ AND b.`courseNo` IN(
+ SELECT b.`courseNo` FROM score b WHERE b.`studentNo`=1)
+ -- ----------------------------------
+ -- (13)把score表中叶平老师教的课的成绩都更改为此课程的平均成绩
+ -- 语法：update 表名 set 字段1=取值1，字段2=取值2……  where 条件表达式
+ -- ---------------------------------
+UPDATE  score a ,(
+SELECT b.courseNo , AVG(a.`score`) AS score
+FROM score a ,course b , teacher c
+WHERE a.`courseNo`=b.`courseNo` AND b.`teacherNo`=c.`teacherNo`
+AND c.`name`='叶平'
+GROUP BY b.`courseNo`) d
+SET a.`score`= d.score  WHERE a.`courseNo`=d.courseNo
+
+-- ---------------------------------
+-- (14)查询和 2 号的同学学习的课程完全相同的其他同学学号和姓名
+-- ----------------------------------
+SELECT a.`studentNo` ,a.name 
+FROM student a ,score b
+WHERE a.`studentNo`=b.studentNo AND b.`courseNo` IN (
+SELECT b.courseNo 
+FROM score b
+WHERE b.`studentNo`=2)
+AND a.`studentNo`!=2
+GROUP BY a.`studentNo`
+HAVING COUNT(*)=(SELECT COUNT(*) FROM score b WHERE b.`studentNo`=2 )
+
+-- -----------------------------
+-- (15)删除学习叶平老师课的SC表记录
+-- 语法：delete from 表名 where 条件表达式
+-- --------------------------------
+DELETE FROM 
+score  AS s
+WHERE s.courseNo 
+IN (
+SELECT c.courseNo 
+FROM course c ,teacher d 
+WHERE c.`teacherNo`=d.`teacherNo` AND d.`name`='叶平')
+
+-- -----------------------------------
+-- (16)向SC表中插入一些记录，这些记录要求符合以下条件：
+-- 1、没有上过编号 2 课程的同学学号；2、插入 2 号课程的平均成绩
+-- 语法：insert into 表名（字段1，字段2……）values（值1，值2……）
+-- ----------------------------------------------
+INSERT INTO score (`courseNo`,`score`,`studentNo`)
+ SELECT 
+  2 ,
+(SELECT AVG(score)FROM score  WHERE courseNo=2)  ,
+studentNo
+FROM score t
+WHERE t.courseNo !=2 
+GROUP BY t.studentNo
+
+-- ----------------------------
+-- (17)按学号由低到高显示所有学生的语文、数学、英语三门课程成绩
+-- 如下显示：学生ID，语文、数学、英语、有效课程数、有效平均数
+-- --------------------------------
+SELECT a.`studentNo`,
+       (SELECT a1.score FROM score a1 WHERE a1.`courseNo`=1 AND a1.`studentNo`=a.studentNo) AS '语文',
+       (SELECT a2.score FROM score a2 WHERE a2.`courseNo`=2 AND a.`studentNo`=a2.studentNo) AS '数学',
+       (SELECT a3.score FROM score a3 WHERE a3.`courseNo`=3 AND a.`studentNo`=a3.studentNo) AS '英语',
+       COUNT(a.`studentNo`),
+       AVG(a.score)
+FROM  score a
+GROUP BY a.`studentNo`
+ORDER BY a.`studentNo` ASC
+
+-- -------------------------------
+-- （18）查询各科成绩最高和最低的分：以如下形式显示：课程ID，最高分，最低分；
+-- --------------------------------
+SELECT a.courseNo AS '课程ID',MAX(a.`score`) AS '最高分',MIN(a.`score`) AS '最低分'
+FROM score a
+GROUP BY a.`courseNo`;
+
+-- --------------------------------
+-- （19）按各科平均成绩从低到高和及格率的百分数从高到低顺序
+-- ---------------------------------
+SELECT a.courseNo AS '学号',
+       AVG(a.score) AS '平均成绩',
+       ((SELECT COUNT(b.studentNo) FROM score b WHERE b.`score`>=60 AND a.courseNo=b.`courseNo`)/ COUNT(*)*100)AS '及格率'
+FROM score a
+GROUP BY a.`courseNo`
+ORDER BY  AVG(a.score) ASC ,
+       ((SELECT COUNT(b.studentNo) FROM score b WHERE b.`score`>=60 AND a.courseNo=b.`courseNo`)/ COUNT(*)*100) DESC
+
+-- ---------------------------------
+-- (20)查询不同老师所教不同课程平均分从高到低显示
+-- ----------------------------------
+SELECT a.`courseNo`,
+       AVG(a.`score`)
+FROM score a ,
+     course b
+WHERE a.`courseNo`=b.courseNo
+GROUP BY a.`courseNo`
+ORDER BY AVG(a.`score`) DESC;
+
+-- ----------------------------------
+-- (21)统计列印各科成绩，各分数段人数：课程ID，课程名称，（100-85），（85-70），（70-60），（低于60）
+-- ------------------------------------
+SELECT a.courseNo,b.name,
+      SUM( CASE WHEN  a.score BETWEEN 85 AND 100 THEN 1 ELSE 0 END) AS '(100-85)',
+      SUM( CASE WHEN  a.score BETWEEN 70 AND 85 THEN 1 ELSE 0 END) AS '(85-70)',
+      SUM( CASE WHEN  a.score BETWEEN 60 AND 70 THEN 1 ELSE 0 END) AS '(70-60)',
+      SUM( CASE WHEN  a.score<60 THEN 1 ELSE 0 END) AS '(低于60)'
+FROM score a,course b
+WHERE a.courseNo=b.courseNo
+GROUP BY a.courseNo
+
+-- ------------------------------------
+-- (22)查询各科成绩前三名的记录（不考虑成绩并列情况）
+-- ------------------------------------
+SELECT * 
+FROM score a 
+WHERE (SELECT COUNT(*) FROM score s1 WHERE s1.courseNo=a.courseNo AND s1.`score`>a.`score`)<3
+ORDER BY a.`courseNo`
+
+-- -------------------------------------
+-- (23)查询每门课程被选修的学生数
+-- -------------------------------------
+SELECT a.name AS '课程',
+       COUNT(b.studentNo) AS '学生数'
+FROM  course a LEFT JOIN  score b ON  a.`courseNo`=b.`courseNo`
+GROUP BY a.name
+
+-- -------------------------------------
+-- (24)查询出只选修了一门课程的全部学生的学号和姓名
+-- --------------------------------------
+SELECT a.studentNo,
+       a.name
+FROM student a
+WHERE a.`studentNo` IN(
+SELECT b.studentNo 
+FROM score b
+GROUP BY b.studentNo HAVING COUNT(*)=1)
+
+-- ------------------------------------
+-- (25)查询男生、女生人数
+-- ------------------------------------
+SELECT a.sex AS '性别',
+       COUNT(*) AS '人数'
+FROM student a 
+GROUP BY a.sex
+
+-- ------------------------------------
+-- (26)查询同名同姓学生名单，并统计同名人数
+-- ------------------------------------
+SELECT a.name ,COUNT(*)
+FROM student a
+GROUP BY a.name
+
+-- ------------------------------------
+-- (27)查询2000年出生的学生名单
+-- -------------------------------------
+SELECT a.name 
+FROM student a
+WHERE age = YEAR(NOW())-2000
+
+-- ------------------------------------
+-- （28）查询每门课程的平均成绩，结果按平均成绩升序排列
+-- ------------------------------------
+SELECT a.`courseNo` ,
+       AVG(a.score)
+FROM score a
+GROUP BY a.`courseNo`
+ORDER BY AVG(a.`score`)
+
+-- --------------------------------------
+-- (29)查询平均成绩大于85的所有学生的学号、姓名和平均成绩
+-- --------------------------------------
+SELECT a.`studentNo`,
+       a.name,
+       AVG(b.score)
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+GROUP BY a.`studentNo`
+HAVING AVG(b.score)>85
+
+-- -------------------------------------
+-- (30)查询课程名称为数学，且分数低于60的学生姓名和分数
+-- -------------------------------------
+SELECT a.`studentNo`,
+       b.score
+FROM student a,score b,course c
+WHERE a.`studentNo`=b.studentNo 
+      AND b.`courseNo`=c.courseNo
+      AND c.name='数学'
+      AND b.score<60
+      
+-- -------------------------------------
+-- (31)查询所有学生的选课情况
+-- ------------------------------------
+SELECT a.name,
+       c.name
+FROM student a ,score b, course c
+WHERE a.`studentNo`=b.studentNo
+      AND b.`courseNo`=c.courseNo
+ORDER BY a.name
+
+-- --------------------------------------
+-- (32)查询任何一门课程成绩在70分以上的姓名、课程名称和分数
+-- ---------------------------------------
+SELECT a.name ,b.`name`,c.`score`
+FROM score c ,course b,student a
+WHERE c.`courseNo`=b.`courseNo`
+AND a.`studentNo`=c.studentNo
+AND c.`score`>70
+
+-- ----------------------------------------
+-- （33）查询不及格的课程，并按课程号从大到小排列
+-- ----------------------------------------
+-- 只查询包含不及格的课程
+SELECT DISTINCT a.courseNo ,a.name
+FROM  course a,score b
+WHERE  a.`courseNo`=b.`courseNo`
+AND b.score<60
+
+-- 不及格的课程的选修记录
+SELECT a.name,b.name ,c.score
+FROM student a,course b,score c
+WHERE a.`studentNo`=c.studentNo 
+AND b.`courseNo`=c.courseNo
+AND c.score<60
+ORDER BY b.`courseNo` DESC
+
+-- ------------------------------------
+-- (34)查询课程编号为 3 且课程成绩在80分以上的学生的学号和姓名
+-- --------------------------------------
+SELECT a.studentNo,a.name
+FROM student a ,score b
+WHERE a.`studentNo`=b.studentNo
+AND b.`courseNo`=3
+AND b.score>80
+
+-- --------------------------------------
+-- (35)求选了课程的学生人数
+-- --------------------------------------
+# 每个课程的人数
+SELECT a.name ,COUNT(*)
+FROM course a, score b
+WHERE a.`courseNo`=b.`courseNo`
+GROUP BY a.name 
+
+# 选修课程的总人数
+SELECT COUNT(DISTINCT a.`studentNo`)
+FROM score a
+
+-- ---------------------------------------
+-- (36)查询选修 杨艳 老师所授课程的学生中，成绩最高的学生姓名极其成绩
+-- ------------------------------------------
+SELECT a.name ,b.score
+FROM student a ,score b,course c,teacher d
+WHERE a.`studentNo`=b.studentNo 
+AND b.`courseNo`=c.courseNo
+AND c.teacherNo=d.teacherNo
+AND d.name ='杨艳'
+ORDER BY b.score DESC 
+LIMIT 0,1
+
+-- --------------------------------------------
+-- (37)查询各个课程及其相应的选修人数
+-- --------------------------------------------
+SELECT a.name ,COUNT(b.studentNo)
+FROM course a  LEFT JOIN score b ON  a.`courseNo`=b.`courseNo`
+GROUP BY b.`courseNo`
+
+-- ---------------------------------------------
+-- (38)查询不同课程但成绩相同的学生的学号、课程号、学生成绩
+-- ----------------------------------------------
+SELECT b.studentNo , b.`courseNo`,b.score
+FROM score a,score b
+WHERE a.`studentNo`=b.studentNo
+AND a.`courseNo`<>b.`courseNo`
+GROUP BY b.score DESC ,b.studentNo,b.courseNo
+
+-- ---------------------------------------------
+-- (39)查询每门课程成绩最好的前两名
+-- ----------------------------------------------
+SELECT s.courseNo,s.studentNo ,s.score
+FROM score s
+WHERE (SELECT COUNT(*) FROM score s1 WHERE s1.courseNo=s.courseNo AND s1.`score`>s.score)<2
+ORDER BY s.courseNo
