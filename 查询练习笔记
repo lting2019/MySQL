@@ -1,0 +1,616 @@
+-- --------------------------------------------
+-- SQL语句练习一
+-- ---------------------------------------------
+USE test;
+
+-- --------------------------------------------
+-- table structure for course
+-- -------------------------------------------
+DROP TABLE IF EXISTS course;
+CREATE TABLE course (
+    courseNo INT(11) DEFAULT NULL,
+    NAME VARCHAR(20) DEFAULT NULL,
+    teacherNo INT(11) DEFAULT NULL
+    )ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+-- -----------------------------------------------
+-- records of course
+-- -----------------------------------------------
+INSERT INTO course VALUES(1,'语文',1);
+INSERT INTO course VALUES(2,'数学',2);
+INSERT INTO course VALUES(3,'英语',3);
+INSERT INTO course VALUES(4,'物理',4);
+
+-- -------------------------------------
+-- table structure for score
+-- -------------------------------------
+DROP TABLE IF EXISTS score ;
+CREATE TABLE score (
+    studentNo INT(11) DEFAULT NULL,
+    courseNo INT(11) DEFAULT NULL,
+    score INT(11) DEFAULT NULL
+    )ENGINE=INNODB DEFAULT CHARSET=utf8;
+  
+-- ----------------------------------------
+-- records for score
+-- ---------------------------------------
+INSERT INTO score VALUES(1,2,78);
+INSERT INTO score VALUES(1,3,67);
+INSERT INTO score VALUES(1,4,67);
+INSERT INTO score VALUES(2,1,52);
+INSERT INTO score VALUES(2,2,81);
+INSERT INTO score VALUES(2,3,92);
+INSERT INTO score VALUES(2,4,67);
+INSERT INTO score VALUES(3,1,52);                     
+INSERT INTO score VALUES(3,2,47);
+INSERT INTO score VALUES(3,3,88);
+INSERT INTO score VALUES(3,4,67);
+INSERT INTO score VALUES(4,2,88);
+INSERT INTO score VALUES(4,3,90);
+INSERT INTO score VALUES(4,4,67);
+INSERT INTO score VALUES(5,1,52);
+INSERT INTO score VALUES(5,3,78);
+INSERT INTO score VALUES(5,4,67);
+INSERT INTO score VALUES(6,1,52);
+INSERT INTO score VALUES(6,2,58);
+INSERT INTO score VALUES(6,4,67);
+INSERT INTO score VALUES(1,1,52);
+INSERT INTO score VALUES(5,2,72);
+INSERT INTO score VALUES(7,2,72);
+
+-- -------------------------------------------------------
+-- table structure for student
+-- ------------------------------------------------------
+DROP TABLE IF EXISTS student;
+CREATE TABLE student(
+    NAME VARCHAR(32) DEFAULT NULL,
+    age INT(11) DEFAULT NULL,
+    sex VARCHAR(8) DEFAULT NULL,
+    studentNo INT(11) DEFAULT NULL
+    )ENGINE=INNODB DEFAULT CHARSET=utf8;
+
+-- -------------------------------------------------------
+-- records of student
+-- -------------------------------------------------------
+INSERT INTO student VALUES('钱二',19,'女',2);
+INSERT INTO student VALUES('刘一',18,'男',1);
+INSERT INTO student VALUES('张三',17,'男',3);
+INSERT INTO student VALUES('李四',18,'女',4);
+INSERT INTO student VALUES('王五',17,'男',5);
+INSERT INTO student VALUES('赵6',19,'女',6);
+INSERT INTO student VALUES('钱二',25,'男',7);
+
+-- -----------------------------------------------------
+-- table structure for teacher
+-- ------------------------------------------------------
+DROP TABLE IF EXISTS teacher;
+CREATE TABLE teacher(
+    teacherNo INT(11) DEFAULT NULL,
+    NAME VARCHAR(20) DEFAULT NULL
+    )ENGINE=INNODB DEFAULT CHARSET=utf8;
+    
+-- ---------------------------------------------------
+-- records of teacher
+-- ----------------------------------------------------
+INSERT INTO teacher VALUES(1,'叶平');
+INSERT INTO teacher VALUES(2,'贺高');
+INSERT INTO teacher VALUES(3,'杨艳');
+INSERT INTO teacher VALUES(4,'叶平');
+
+--  -------------------------------------------------
+-- （1）查询 1 课程比 2 课程成绩低的所有学生的学号、1学科成绩、2学科成绩
+-- --------------------------------------------------
+#方法一
+#内容都来自一个表，要求将一个二维表透视，用原表设置成两个别名不同的数据源
+#两个表连接可以先筛选出想要的字段和内容再连接
+#连接后再按照条件筛选
+
+SELECT a.studentNo,b.score AS '学科1成绩',a.`score` AS '学科2成绩'
+FROM score a,score b
+WHERE b.`courseNo`=1 #筛选第一个连接表
+AND a.`courseNo`=2  #筛选第二个连接表
+AND b.`studentNo`=a.studentNo  #连接目标表
+AND b.`score`<a.score  #连接后的筛选
+ORDER BY a.`studentNo` ASC
+
+#**重点**如何构造连接表：1、使用源表做两个表，2、分布筛选两个表的数据做为连接表
+
+#方法二
+SELECT s1.studentNo,
+       s1.score AS '001',
+       s2.score AS '002'
+FROM score s1,
+     (SELECT * FROM score s WHERE s.`courseNo`=2) s2  #用原表构造连接表
+WHERE s1.courseNo=1
+AND s1.studentNo=s2.studentNo
+AND s1.score<s2.score
+ORDER BY s1.`studentNo` ASC
+
+#**重点**构造连接表方法：1、方法一中的使用两个原表做连接，在条件中分别筛选出可连接的内容条件
+#2、方法二中的使用原表先筛选出可用的内容作为第二个连接表，在条件中只需要对第一个原表做筛选然后和第二连接表直接连接
+#3、要养成对结果排序的习惯——如结果按照学号排序
+#4、要养成使用表别名的习惯，方便表示字段
+#5、注意逗号的缺失和多余
+#6、注意标点符号在中文状态下的错误
+-- ------------------------------------------
+-- （2）查询平均成绩大于60分的同学的学号和平均成绩
+-- -----------------------------------------
+SELECT a.`studentNo`,
+       AVG(a.`score`) AS '平均成绩'
+FROM score a
+GROUP BY a.`studentNo`
+HAVING AVG(a.score)>60
+ORDER BY a.studentNo;
+-- -----------------------------------------------
+-- （3）查询所有童鞋的学号、姓名、选课数、总成绩
+-- -----------------------------------------------
+SELECT b.studentNo ,
+       a.name ,
+       COUNT(*) AS '选课数',
+       SUM(b.score) AS '总成绩'
+FROM score b,student a
+WHERE a.`studentNo`=b.`studentNo`
+GROUP BY b.studentNo 
+ORDER BY b.`studentNo` ;
+
+-- -----------------------------------------------
+-- （4）查询姓 李 的老师的个数
+-- -----------------------------------------------
+SELECT COUNT(*)
+FROM teacher a
+WHERE a.`name` LIKE '李%';
+
+#**重点**注意Like是一种运算，后面连接的是字符串
+###所以like后面一定是引号，且通配符是在引号里面，通配符表示字符串的内容，%表示任意字符串
+
+-- ------------------------------------------------
+-- （5）查询没学过‘叶平’老师课的同学的学号、姓名
+-- ------------------------------------------------
+###错误方法:因为这样的表达式表示：先连接原表再筛选出原表的条件，如果想先对连接表做筛选，应该构造连接表
+SELECT DISTINCT a.studentNo,a.name
+FROM student a,score b,course c,teacher d
+WHERE a.`studentNo`=b.`studentNo`
+AND b.`courseNo`=c.`courseNo`
+AND c.`teacherNo`=d.`teacherNo`
+AND d.`name`!='叶平'
+ORDER BY a.`studentNo`;
+
+###正确方法：1、最后的条件使用 in 或者 not in 做筛选，后面连接嵌套
+SELECT a.studentNo,a.name
+FROM student a
+WHERE a.`studentNo` NOT IN (
+SELECT b.studentNo 
+FROM score b,course c,teacher d
+WHERE b.`courseNo`=c.`courseNo`
+AND c.`teacherNo`=d.`teacherNo`
+AND d.`name`='叶平')
+
+-- -----------------------------------------
+-- (6)查询学过 1 并且也学过编号 2 课程的同学的学号、姓名
+-- -----------------------------------------
+###方法一
+SELECT a.`studentNo`,a.`name`
+FROM student a,score s1,score s2
+WHERE a.`studentNo`=s1.studentNo
+AND s1.studentNo=s2.studentNo
+AND s1.courseNo=1
+AND s2.courseNo=2
+GROUP BY a.`studentNo`
+ORDER BY a.`studentNo`
+
+###方法二
+SELECT a.`studentNo`,a.name
+FROM student a,score s
+WHERE a.`studentNo`=s.studentNo
+AND s.coureNo IN (1,2)
+GROUP BY a.`studentNo`
+HAVING COUNT(*)=2
+###重点在于having部分通过筛选出参加了两个课程的同学
+
+###方法三
+SELECT a.`studentNo`,a.`name`
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+AND b.courseNo=1
+AND a.`studentNo` IN (
+SELECT c.studentNo 
+FROM score c
+WHERE c.`courseNo`=2)
+### 重点：先将目标字段表和条件1表连接，再在连接后的条件筛选中使用 in + select查询做条件
+
+-- ------------------------------------------------------
+-- (7)查询学过‘叶平’老师所教的所有课的同学的学号，姓名
+-- ------------------------------------------------------
+SELECT a.`studentNo`,a.`name`
+FROM student a,score b,course c,teacher d  
+WHERE a.`studentNo`=b.studentNo
+AND b.courseNo = c.courseNo
+AND c.teacherNo=d.teacherNo 
+AND d.name='叶平'
+GROUP BY a.`studentNo`
+HAVING COUNT(a.`studentNo`)= 
+(SELECT COUNT(c.courseNo)FROM course c,teacher d WHERE c.teacherNo=d.teacherNo AND d.name='叶平')
+###重点：条件筛选的位置是在什么层次，是where后面还是having后面
+
+-- ------------------------------------------------------
+-- （8）查询课程编号 2 的成绩比课程编号 1 课程低的学生的姓名、学号
+-- ------------------------------------------------------
+SELECT a.`name`,a.`studentNo`
+FROM student a ,score b ,score c
+WHERE a.`studentNo`=b.studentNo
+AND b.studentNo=c.studentNo
+AND b.courseNo=1
+AND c.courseNo=2
+AND b.score>c.score
+GROUP BY a.`studentNo`
+ORDER BY a.`studentNo`
+### 重点：常见的这种两个原表，一种一个条件原表要引用两次，一般在from阶段将一个条件原表先构造成筛选后的条件表
+
+-- ----------------------------------------------------------
+-- (9)查询有课程成绩小于60分的同学的学号、姓名
+-- -----------------------------------------------------------
+SELECT a.studentNo,a.name 
+FROM student a ,score b
+WHERE a.`studentNo`=b.studentNo
+AND b.score<60
+GROUP BY a.`studentNo`
+ORDER BY a.`studentNo`
+###重点：聚合函数不会出现在where的后面，要么在select的后面要么在having的后面
+
+-- -----------------------------------------------------------
+-- （10）查询没有学全所有课程的同学的学号、姓名
+-- -----------------------------------------------------------
+SELECT a.`studentNo`,a.`name`
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+GROUP BY a.`studentNo`
+HAVING COUNT(a.`studentNo`)<(SELECT COUNT(*)FROM course)
+
+-- -----------------------------------------------------------
+-- (11)查询至少有一门课程与学号为 1 的同学所学相同的同学的学号和姓名
+-- --------------------------------------------------------------
+SELECT a.`studentNo`,a.`name`
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+AND b.courseNo IN 
+(SELECT c.courseNo FROM score c WHERE c.`studentNo`=1)
+AND a.`studentNo`!=1
+GROUP BY a.`studentNo`
+ORDER BY a.`studentNo`
+###如果结果完全重合记录，可以使用distinct 或者group by ,如果不完全重合，1、分组用group by；2、仅保留一个关键字段的1个记录用distinct
+
+-- ------------------------------------------------------------
+-- （12）查询至少学过学号为 1 同学所有一门课的其他同学的学号和姓名
+-- 其实和11题是一样的呀
+-- --------------------------------------------------------------
+
+
+-- ------------------------------------------------------------
+-- （13）把secore 表中叶平老师教的课的成绩都更改为此课程的平均成绩
+-- -------------------------------------------------------------
+###更改语法：update 目标表（单纯要改的表），条件表（直接可用于改目标的表) set 字段=   where 条件
+UPDATE score s,
+(SELECT AVG(s.score) AS avgs ,s.courseNo AS courseNo
+FROM score s,course c ,teacher d
+WHERE s.`courseNo`=c.`courseNo`
+AND c.`teacherNo`=d.`teacherNo`
+AND d.`name`='叶平'
+GROUP BY s.`courseNo`) t
+SET s.score=t.avgs
+WHERE s.courseNo=t.courseNo
+
+###重点：什么时候该使用where 什么时候该使用 having
+####### where 是用于构造连接表后的结果，而 having 用于筛选连接表后的结果
+
+
+-- -----------------------------------------------------------
+-- （14）查询和 2 号同学学习的课程完全相同的其他同学的学号和姓名
+-- -----------------------------------------------------------
+###复杂方法一
+SELECT a.`studentNo`,a.name 
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+AND b.courseNo IN(
+SELECT b.courseNo FROM score b WHERE b.`studentNo`=2)
+AND a.`studentNo`!=2
+GROUP BY a.`studentNo`
+HAVING COUNT(a.`studentNo`)=
+(SELECT COUNT(*) FROM score b WHERE b.`studentNo`=2)
+ORDER BY a.`studentNo`
+###注意：为什么 in 句子在题10，11，12没有用上
+
+-- -----------------------------------------------------------
+-- （15）删除学习 叶平 老师课的SC表的记录
+-- 删除语法：delete from 表名 where 条件
+-- -----------------------------------------------------------
+DELETE FROM score a
+WHERE a.courseNo IN(
+SELECT b.courseNo 
+FROM course b,teacher d
+WHERE  b.`teacherNo`=d.`teacherNo`
+AND d.`name`='叶平')
+###注意：1、区分好条件表和目标表  2、在操作语句中，如果有条件表，一般都用 in 语句，且条件表在 in 后面
+
+-- --------------------------------------------------------------
+-- （16）向SC表中插入一些记录，这些记录要求符合以下条件：
+### 1、没有上过编号 2 课程同学学号；2、插入2 号课程的平均成绩
+-- -------------------------------------------------------------
+### 插入子查询的语法：insert into R（A1,A2,……An) (子查询)
+INSERT INTO score (studentNo,courseNo,score)
+(SELECT a.`studentNo`,2,(SELECT AVG(b.score) FROM score b WHERE b.`courseNo`=2)
+FROM score a 
+WHERE a.`studentNo` NOT IN(
+SELECT c.studentNo 
+FROM score c
+WHERE c.`courseNo`=2))
+
+### 重点：1、插入子查询的语法；2、常量作为字段，查询作为字段
+
+-- ----------------------------------------------------------------
+-- (17)按学号由低到高显示所有学生的语文、数学、英语三门的课程成绩，按如下形式显示
+###学生ID，语文，数学，英语，有效课程数，有效平均分
+-- ---------------------------------------------------------------
+SELECT a.`studentNo`,
+(SELECT b1.score FROM score b1,course c1 WHERE b1.`courseNo`=c1.`courseNo`AND c1.`name`='语文' AND a.studentNo=b1.`studentNo`) AS '语文',
+(SELECT b2.score FROM score b2,course c2 WHERE b2.`courseNo`=c2.`courseNo`AND c2.`name`='数学' AND a.studentNo=b2.`studentNo`) AS '数学',
+(SELECT b3.score FROM score b3,course c3 WHERE b3.`courseNo`=c3.`courseNo`AND c3.`name`='英语' AND a.studentNo=b3.`studentNo`) AS '英语',
+COUNT(*) AS '有效课程数',
+AVG(a.score) AS '有效平均数'
+FROM score a
+GROUP BY a.`studentNo`
+ORDER BY a.`studentNo`
+###重点：select语句作为字段时是否是固定一个值，如何联动非select字段
+
+-- ---------------------------------------------------------------------
+-- （18）查询各科成绩的最高和最低分：以如下形式显示：课程ID，最高分，最低分
+-- --------------------------------------------------------------------
+SELECT a.courseNo ,MAX(a.score),MIN(a.score)
+FROM score a
+GROUP BY a.courseNo
+ORDER BY a.courseNo
+###重点：什么时候要使用一个原表做两个表使用，当一个表用到两个条件的时候
+
+-- -------------------------------------------------------------------
+-- （19）按各科平均成绩从低到高和及格率的百分数从高到底顺序
+-- ------------------------------------------------------------------
+###方法一：
+SELECT a.courseNo ,
+AVG(a.score),
+((SELECT COUNT(*) FROM score b WHERE b.score>60 AND a.courseNo=b.courseNo)/COUNT(*)) AS '及格率'
+FROM score a
+GROUP BY a.courseNo
+ORDER BY AVG(a.score) ASC,((SELECT COUNT(*) FROM score b WHERE b.score>60 AND a.courseNo=b.courseNo)/COUNT(*)) DESC
+
+###方法二：
+SELECT a.courseNo ,
+AVG(a.score),
+(SUM(CASE WHEN a.score >60 THEN 1 ELSE 0 END)/COUNT(*)) AS '及格率'
+FROM score a
+GROUP BY a.courseNo
+ORDER BY AVG(a.score) ASC,(SUM(CASE WHEN a.score >60 THEN 1 ELSE 0 END)/COUNT(*)) DESC
+###重点：方法二中巧妙使用了case when 条件 then 结果1 else 结果2 end
+
+-- --------------------------------------------------------------------
+-- （20）查询不同老师所教不同课程平均分从高到低显示
+-- ----------------------------------------------------------------------
+SELECT a.courseNo ,a.`name`,b.name,AVG(c.score)
+FROM score c,course a,teacher b
+WHERE a.courseNO=c.courseNO
+AND a.teacherNo=b.teacherNo
+GROUP BY b.name 
+ORDER BY AVG(c.score) DESC
+
+-- --------------------------------------------------------------------
+-- (21)统计列印各科成绩，各分数段人数：课程ID，课程名称，（100-85），（85-70），（70以下）
+-- ----------------------------------------------------------------------
+SELECT a.courseNo,b.name,
+SUM( CASE WHEN a.score>=85 THEN 1 ELSE 0 END) AS '(100-85)',
+SUM( CASE WHEN a.score>=70 AND a.score<85 THEN 1 ELSE 0 END)AS '(85-70)',
+SUM( CASE WHEN a.score<70 THEN 1 ELSE 0 END)AS '(70以下)'
+FROM course b,score a
+WHERE a.`courseNo`=b.courseNo
+GROUP BY a.courseNo
+ORDER BY a.courseNo
+###重点：统计个数：使用case when 语句构造类似 EXCEL 中的辅助列0、1再统计求和
+### SQL比EXCEL方便很多，不用辅助列
+
+-- ------------------------------------------------------------------------
+-- （22）查询各科成绩前三名的记录（不考虑成绩并列情况）
+-- ------------------------------------------------------------------------
+SELECT * 
+FROM score s
+WHERE
+   (SELECT COUNT(*)
+    FROM score s1
+    WHERE s1.courseNo=s.courseNo
+        AND s1.`score`>s.score
+    )<3
+ORDER BY s.courseNo
+###重点：排序问题，排序顺序：课程、成绩
+#### 连接问题:指定一个主表，对连接字段遍历，从第一个值开始配对，配对时查找副表每一个和主表值相同的，全部对应
+#### 构造排序
+#### 由于目标字段的表不能和条件的表使用相同的别号，各个表的职能不同
+
+-- ----------------------------------------------------------
+-- (23)查询每门课程被选修的学生数
+-- ----------------------------------------------------------
+SELECT a.courseNo,b.name,COUNT(a.studentNo)
+FROM score a LEFT JOIN course b ON a.courseNo=b.courseNo
+GROUP BY a.courseNo
+
+-- -----------------------------------------------------------
+-- (24)查询出只选修了一门课程的全部学生的学号和姓名
+-- -----------------------------------------------------------
+###方法一：
+SELECT a.`studentNo`,a.`name`
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+GROUP BY a.`studentNo`
+HAVING COUNT(a.`studentNo`)=1
+
+###方法二：先构造好连接表（对连接表先做筛选）
+SELECT
+  stu1.StudentNo AS '学号',
+    stu1.name AS '姓名'
+FROM
+  (SELECT StudentNo, COUNT(CourseNo) AS amount FROM score GROUP BY StudentNo) t1,
+  student stu1
+WHERE
+  t1.StudentNo = stu1.studentNo
+  AND
+  t1.amount = 1
+
+-- --------------------------------------------------------------------
+-- （25）查询男生、女生的人数
+-- ---------------------------------------------------------------------
+SELECT a.`sex`,COUNT(*)
+FROM student a
+GROUP BY a.`sex`
+
+-- ---------------------------------------------------------------------
+-- (26)查询同名同姓学生名单，并统计同名人数
+-- ---------------------------------------------------------------------
+SELECT a.`name`,COUNT(*)
+FROM student a
+GROUP BY a.`name`
+
+-- ---------------------------------------------------------------------
+-- (27)查询2000年出生的学生名单
+-- ---------------------------------------------------------------------
+SELECT a.`name`
+FROM student a 
+WHERE YEAR(CURDATE())-a.age=2000
+
+-- ----------------------------------------------------------------------
+-- (28)查询每门课程的平均成绩，结果按平均成绩升序排序
+-- ----------------------------------------------------------------------
+SELECT a.`name`,AVG(b.score)
+FROM course a,score b
+WHERE a.courseNo=b.courseNo
+GROUP BY a.`name`
+ORDER BY AVG(b.score)
+### 注意：是否有些课程没有人考试
+
+-- ----------------------------------------------------------------------
+-- (29)查询平均成绩大于85的所有学生的学号、姓名和平均成绩
+-- ----------------------------------------------------------------------
+SELECT a.`studentNo`,a.`name`,AVG(b.score)
+FROM student a,score b
+WHERE a.`studentNo`=b.studentNo
+GROUP BY a.`studentNo`
+HAVING AVG(b.score)>85
+
+-- -----------------------------------------------------------------------
+-- (30)查询课程名称为 数学，且分数低于60的学生姓名和分数
+-- -----------------------------------------------------------------------
+SELECT a.`name`,b.score
+FROM student a,score b,course c
+WHERE a.`studentNo`=b.studentNo
+   AND b.courseNo=c.courseNo
+   AND c.name='数学'
+   AND b.score>60
+ 
+ -- -----------------------------------------------------------------------
+ -- (31)查询所有学生的选课情况
+ -- -----------------------------------------------------------------------
+ SELECT a.`name`,c.name
+ FROM score b,course c,student a
+ WHERE b.courseNo = c.courseNo
+   AND a.studentNo = b.studentNo
+ORDER BY a.name 
+### 注意：什么时候要用group by
+
+-- -------------------------------------------------------------------------
+-- (32)查询任何一门课程成绩在70分以上的姓名、课程名称和分数
+-- --------------------------------------------------------------------------
+SELECT a.name,c.name,b.score
+FROM student a,score b,course c
+WHERE a.`studentNo`= b.studentNo
+  AND b.courseNo = c.courseNo
+  AND b.score>70
+ORDER BY a.`name`,c.name
+
+-- --------------------------------------------------------------------------
+-- (33)查询不及格的课程，并按课程号从大到小排序
+-- --------------------------------------------------------------------------
+SELECT DISTINCT a.name,a.courseNo
+FROM course a,score b
+WHERE a.courseNo = b.courseNo
+  AND b.score<60
+ORDER BY a.courseNo DESC
+
+-- ---------------------------------------------------------------------------
+-- (34)查询课程编号为 3 且课程成绩在80分以上的学生的学号和姓名
+-- ---------------------------------------------------------------------------
+SELECT a.`studentNo`,a.`name`
+FROM student a,score b
+WHERE a.`studentNo` = b.studentNo
+   AND b.courseNo = 3
+   AND b.score>80
+
+-- ---------------------------------------------------------------------------
+-- (35)求选了课程的学生人数
+-- ---------------------------------------------------------------------------
+###方法一：
+SELECT COUNT(DISTINCT a.studentNo)
+FROM score a
+
+###方法二：
+SELECT COUNT(*)
+FROM (SELECT * FROM score a GROUP BY a.`studentNo`) t
+
+###注意：1、什么时候用 distinct 、group by ；2、使用select 语句构造目标表需要添加别名
+
+-- --------------------------------------------------------------------------
+-- （36）查询选修 杨艳 老师所授课程的学生中，成绩最高的学生姓名及其成绩
+-- --------------------------------------------------------------------------
+SELECT a.`name`,b.score
+FROM student a,score b,course c,teacher d
+WHERE a.`studentNo` = b.studentNo
+   AND b.courseNo = c.courseNo
+   AND c.teacherNo = d.teacherNo
+   AND d.name = '杨艳'
+ORDER BY b.score DESC
+LIMIT 0,1
+### 注意：limit by 是对最终结果的选择，可以先对结果排序后再选择
+
+-- --------------------------------------------------------------------------
+-- （37）查询各个课程及相应的选修人数,同题（31）
+-- --------------------------------------------------------------------------
+
+-- --------------------------------------------------------------------------
+-- （38）查询不同课程但成绩相同的学生的学号、课程号、学生成绩
+-- --------------------------------------------------------------------------
+###方法一：
+SELECT a.`studentNo`,a.courseNo,a.score
+FROM score a,score b
+WHERE a.score = b.score
+   AND a.courseNo!=b.courseNo
+ORDER BY a.score DESC ,a.studentNo,a.courseNo
+
+###方法二：
+SELECT
+  s.StudentNo AS '学号',
+  s.CourseNo AS '课程号',
+  s.score AS '成绩'
+FROM
+  score s
+WHERE
+  (SELECT COUNT(*) FROM score s1 WHERE s1.score = s.score AND s1.CourseNo <> s.COurseNo) > 0
+ORDER BY s.score DESC, s.StudentNo, s.CourseNo
+###注意：只查询一个结果表，怎么构造条件
+
+-- ------------------------------------------------------------
+-- （39）查询每门课程成绩最好的前两名
+-- ------------------------------------------------------------
+SELECT b.courseNo,b.`studentNo`,b.score
+FROM score b
+WHERE 
+(SELECT COUNT(*)
+FROM score c
+WHERE  c.score > b.score
+   AND b.courseNo=c.courseNo)< 2
+ORDER BY b.courseNo,b.studentNo
+###注意：1、连接条件的字段不是随便用的；2、怎么减少查找的表
+
+
