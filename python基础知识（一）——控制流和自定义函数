@@ -1,0 +1,130 @@
+######################################
+'''函数：python自带函数、math模块函数、numpy模块函数、pandas函数'''
+
+######################################
+###（1）字符串
+s1='string function'
+#(1)获取字符串string
+print(s1[:6],'\n')
+#(2)获取字符串function
+print(s1[7:],'\n')
+
+#(3)将字符串‘出生年月：’，‘1989’，‘0117’串连起来
+s1='出生年月：'
+s2='1989'
+s3='0717'
+s4=s1+s2+s3
+print(s4,'\n')
+
+#(4)将字符串‘0771’，‘8979002’用短线连接起来
+print('-'.join(['0771','8979002']),'\n')
+
+#(5)字符串重复,如*重复20次
+print('*'*20)
+
+###########################################
+###（2）if语句
+#（1）如果输入数字大于88，则打印great!，否则打印too bad！；输入提示框：plz enter a number:
+a=int(input('plz enter a number:'))
+if a>88:
+    print('great!')
+else:
+    print('too bad!')
+    
+'''输入框的内容数据类型为文本，注意需要转换'''
+
+#（2）获取身份证‘321234198907171111’的出生日期和性别
+import datetime
+id='321234198907171111'
+if len(id)==18:
+    birthday=datetime.datetime.strptime(id[6:14],'%Y%m%d').date()
+    if int(id[-2])%2==0:
+        gender='M'
+    else:
+        gender='F'
+print(birthday,'\n',gender,'\n')
+
+'''注意:将文本数据转化为数值型'''
+
+##############################################
+###(3)for语句
+#（1）打印列表中的每个元素range(3)
+for i in range(3):
+    print(i)
+'''range(i)表示0:i-1的数列''' 
+
+#(2)使用循环对1:100求和
+s=0
+for i in range(101):
+    s=s+i
+print(s)
+'''s=s+i等同于s+=i的写法'''
+
+
+'''#（3）对身份证列表['3212341987907171111','328411199205232333','116788903211321'] 
+输出每个出生日期和性别
+'''
+c=['3212341987907171111','328411199205232333','116788903244321']
+import datetime
+for i in c:
+    if len(i)==18:
+        birthday=datetime.datetime.strptime(i[6:14],'%Y%m%d').date()
+        if int(i[-2])%2==0:
+             gender='M'
+        else:
+             gender='F'
+    else:
+        birthday=datetime.datetime.strptime(str(19)+i[5:11],'%Y%m%d').date()
+        if int(i[-2])%2==0:
+            gender='M'
+        else:
+            gender='F'
+    
+    print(birthday,'\n',gender,'\n')
+    
+    
+    
+    
+#############################
+###（4）while语句
+#（1）计算首项为0，公差为3的等差数列前5项之和
+i=0
+s=0
+while i<=4:
+    s=s+3*i
+    i=i+1
+print(s)
+
+#(2)游戏：规则一：游戏开始！如需退出，请输入任意内容并按回车，否则回车将一直游戏下去；
+#规则二：数字在1:100数列中，打印每个数字，如果遇到有7和被7整除的数不打印，其他数据打印
+
+print('游戏开始！如需退出，请输入任意内容并按回车，否则回车将一直游戏下去')
+for i in list(range(1,100+1)):
+    s=input()
+    if len(s)==0:
+        if(i%7==0)or (str(i).find('7')!=-1):
+            continue
+        else:
+            print(i)
+    else:
+        break
+'''str('17').find('7')返回7在17字符串中的索引位置'''
+
+################################
+###（5）lambda函数
+#（1）计算两元二次函数z(x,y)=x^2+3.14*x-xy的值
+z=lambda x,y:x**2+3.14*x-x*y
+print(z(10,20),'\n')
+'''lambda 函数体：y=lambda x,y:表达式'''
+
+#（2）用lambda函数对ls列表按照第二个值排序
+dict1={'a':1,'f':6,'b':8}
+ls=list(dict1.items())
+ls.sort()
+print(ls)
+'''字典的键值对组成的列表默认升序按照第一个值排序'''
+
+#构造排序函数
+y=lambda x:x[1]
+ls.sort(key=y)
+print(ls)
