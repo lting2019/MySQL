@@ -1,0 +1,51 @@
+#################################################
+###（1）构建数据框
+#（1.1）将列表[[1,2,3],[10,20,30],[100,200,300],[1,10,100]]传入数据框df1
+import pandas as pd
+df1=pd.DataFrame([[1,2,3],[10,20,30],[100,200,300],[1,10,100]],columns=['V1','V2','V3'])
+df1
+
+#(1.2)将字典{'id'：[1,2,3],'name':['tom','lily','jim'],'age':[28,27,29]}传入数据框df2
+df2=pd.DataFrame({'id':[1,2,3],'name':['tom','lily','jim'],'age':[28,27,29]},
+                 columns=['id','name','age'])
+df2
+
+#####################################################
+###(2)数据的读入
+#(2.1)读入数据'D:\222学习\数据分析案例资料\鸢尾花数据.txt',无字段名，列间隔为空格
+df3=pd.read_table(r'D:\222学习\数据分析案例资料\鸢尾花数据.txt',sep='/s+',
+                 header=None,usecols=[0,1,2,3,4],names=['V1','V2','V3','V4','V5'])
+df3.head()
+
+#(2.2)读入数据'D:\222学习\数据分析案例资料\鸢尾花数据.cvs',无字段名，列间隔为逗号
+df4=pd.read_csv(r'D:\222学习\数据分析案例资料\鸢尾花数据.csv',sep=',',
+                header=None,usecols=[0,1,2,3,4],names=['V1','V2','V3','V4','V5'])
+df4
+'''read_csv和read_table都可以读取文本数据，其中csv读取的是以逗号为分割符的文本数据，
+table读取的是以制表符（/t）或者空格(/s+)为分割符的数据，'''
+
+#(2.3)读入数据'D:\222学习\数据分析案例资料\鸢尾花数据.xlsx',无字段名
+df5=pd.read_excel(r'D:\222学习\数据分析案例资料\鸢尾花数据.xlsx',header=None,names=['V1','V2','V3','V4','V5','V6'])
+df5.head()
+
+#(2.4)读入本地数据库数据，数据库名为test，查询的数据为SELECT * FROM score 
+import pymysql
+#创建连接
+cnn=pymysql.connect(host='localhost',port=3306,user='root',
+                  password='mysql -u root -p',database='test',charset='utf8')
+#读取数据
+df6=pd.read_sql('SELECT * FROM score',cnn)
+df6.head()
+
+##########################################
+###（3）数据信息概览
+#（3.1）查看数据框df4的行列
+print(df4.shape,'\n')
+
+#(3.2)查看数据框df4的列名
+print(df4.columns,'\n')
+
+#(3.3)数据框df4的概况
+print(df4.describe(),'\n')
+print(df4.describe(include=['object']),'\n')
+print(df4.info())
