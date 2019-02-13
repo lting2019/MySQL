@@ -128,3 +128,67 @@ print(ls)
 y=lambda x:x[1]
 ls.sort(key=y)
 print(ls)
+
+
+###################################
+###(6)自定义函数
+#(1)计算两元二次函数z(x,y)=x^2+3.14*x-xy的值
+def z(x,y):
+    return x**2+3.14*x-x*y
+print(z(10,20),'\n')
+
+#(2)函数fun1(a,b,c)=a*b*c,输出fun1(1,2,3)的结果
+def fun1(a,b,c):
+    print(a*b*c)
+    return a*b*c
+print(fun1(1,2,3))
+
+'''注意：statement语句是过程语句，不是结果语句，没有return就没有结果的输出，只有过程输出'''
+
+#（3）编写一个游戏函数geme(min,max),函数表示在min和max之间猜一个数字，输入自己猜的数字
+#     给定的数字是min和max之间的一个随机数，如果猜大和猜小、猜中都会提示，猜中游戏结束
+def game(min,max):
+    import random
+    number = random.randint(min,max)
+    while True:
+        guess=float(input('请猜一个数字：'))
+        if guess <number:
+            min=guess
+            print('不好意思，你猜的数偏小了！请在%d到%d之间猜一个数！'%(min,max))
+        elif guess>number:
+            max=guess
+            print('不好意思，你猜的数偏大了！请在%d到%d之间猜一个数！'%(min,max))
+        else:
+            print('恭喜你猜对了')
+            print('游戏结束！')
+            break
+game(1,10)
+
+'''注意：%d格式化的用法'''
+#（4）设置函数area(R,pi=3.14)=pi*pow(R,2),求area(10)的值
+def area(R,pi=3.14):
+    S=pi*pow(R,2)
+    return(S)
+area(10)
+
+#(5)设置函数func2(a,b,*name)表示家庭经济情况，其中a为收入，b为支出，*name表示家庭成员名
+#    函数输出结果依次为收入，支出，家庭成员名，一共几口人，人均收入多少
+#    求家庭func（10000,6000，‘张三’，‘李四’，‘王五’）
+def func2(a,b,*name):
+    print(a)
+    print(b)
+    print(name)
+    print('一共%d口人'%len(name))
+    print('人均收入为%.2f'%(a/len(name)))
+func2(10000,6000,'张三','李四','王五')
+
+#（6）构造函数stat(name,**score),函数表示输出姓名，各科成绩，某某平均分为多少
+def stat(name,**score):
+    print(name)
+    print(score)
+    print('%s的平均成绩为%.2f'%(name,sum(score.values())/len(score)))
+stat('sim',sx=90,yw=79,yy=100)
+
+'''总结1：可变参数是个数随意的，输出是元组。关键字参数也是随意的，但是输出是字典的形式'''
+'''总结2：自定义函数参数的顺序是必须参数，默认参数，可变参数，关键字参数'''
+
