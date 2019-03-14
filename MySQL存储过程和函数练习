@@ -1,0 +1,86 @@
+-- 创建 food 表
+USE test;
+DROP TABLE IF EXISTS food;
+CREATE TABLE food (id INT(10) NOT NULL UNIQUE PRIMARY KEY AUTO_INCREMENT,
+			NAME VARCHAR(20) NOT NULL,
+			company VARCHAR(30) NOT NULL,
+			price FLOAT ,
+			produce_time YEAR,
+			validity_time INT(4),
+			address VARCHAR(50)
+			);
+
+-- 插入数据
+INSERT INTO food VALUES(1,'AA饼干','AA饼干厂',2.5,'2008',3,'北京');
+INSERT INTO food VALUES(2,'CC牛奶','CC牛奶厂',3.5,'2009',1,'河北');
+INSERT INTO food VALUES(3,'EE果冻','EE果冻厂',1.5,'2007',2,'北京');
+INSERT INTO food VALUES(4,'FF咖啡','FF咖啡厂',20,'2002',5,'天津');
+INSERT INTO food VALUES(5,'GG奶糖','GG奶糖厂',14,'2003',3,'广东');
+
+-- 创建存储过程
+-- 存储过程的作用是查询food表中食品单价高于price_info1且低于price_info2的食品种数，然后由count输出来，并且计算满足条件的单价的总和
+
+
+DELIMITER &&                         //将sql的结束符号分号变成&&
+CREATE PROCEDURE food_price_count (IN price_info1 FLOAT ,IN price_info2 FLOAT ,OUT COUNT INT) 
+	READS SQL DATA
+	BEGIN
+	  DECLARE temp FLOAT ;                               //定义变量temp
+	  // 定义光标match_price
+	  DECLARE match_price CURSOR FOR SELECT price FROM food;
+	  //定义条件处理。如果没有遇到关闭光标，就退出存储过程
+	  DECLARE EXIT HANDLER FOR NOT FOUND CLOSE match_price;
+	  SET @sum =0                                      //为临时变量sum赋值
+	  //用select…into 语句来为输出变量count赋值
+	  SELECT COUNT(*) INTO COUNT FROM food
+	     WHERE price >price_info1 AND price <price_info2;
+	  OPEN match_price ;                                //打开光标
+	  REPEAT                                            //执行循环
+		FETCH match_price INTO temp;                //使用光标match_price
+		//执行条件语句
+		IF temp>price_info1 AND temp<price_info2
+			THEN SET @sum =@sum+temp;
+		END IF ;
+	  UNTIL 0 
+	  END REPEAT;                                       //结束循环
+	  CLOSE match_price;                                //关闭光标
+	 END &&                                             
+DELIMITER ;                                                  //将sql语句的结束符号改为分号；
+
+
+-- 调用存储过程，查询价格在2-18之间的食品种数
+
+CALL food_price_count(2,18,@count);
+
+-- 查看调用结果
+
+SELECT @count,@sum;
+
+-- 删除存储过程
+DROP PROCEDURE food_price_count;
+
+-- 查看存储过程
+SHOW CREATE PROCEDURE food_price_count;
+
+
+
+-- 使用函数实现上面的功能
+
+
+DELIMITER &&
+CREATE FUNCTION food_price_count1(price_info1 FLOAT,price_info2 FLOAT )
+	RETURNS INT 
+	READS SQL DATA
+	BEGIN
+	RETURN(SELECT COUNT(*) FROM food
+		WHERE price>price_info1 AND price< price_info2);
+	END &&
+DELIMITER ;
+
+-- 使用函数
+
+SELECT food_price_count1(2,18);
+
+-- 删除函数
+
+DROP FUNCTION food_price_count1;
